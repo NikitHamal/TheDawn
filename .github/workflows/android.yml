@@ -1,0 +1,68 @@
+name: Build Android
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Build signed Android package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Android workload
+        run: dotnet workload install android
+
+      - name: Verify committed keystore
+        run: keytool -list -keystore android-signing/the-dawn-default.keystore -storepass dawn-default-changeit -alias thedawn
+
+      - name: Restore
+        run: dotnet restore src/TheDawn/TheDawn.csproj -f net8.0-android
+
+      - name: Publish signed APK and AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          HASH="${GITHUB_SHA::12}"
+          OUT="artifacts/android"
+          mkdir -p "$OUT"
+          dotnet publish src/TheDawn/TheDawn.csproj \
+            -f net8.0-android \
+            -c Release \
+            -p:ApplicationId=com.the.dawn \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore="$GITHUB_WORKSPACE/android-signing/the-dawn-default.keystore" \
+            -p:AndroidSigningKeyAlias=thedawn \
+            -p:AndroidSigningStorePass=dawn-default-changeit \
+            -p:AndroidSigningKeyPass=dawn-default-changeit \
+            '-p:AndroidPackageFormats=apk;aab'
+          find src/TheDawn/bin/Release/net8.0-android -type f \( -name '*Signed.apk' -o -name '*-Signed.apk' -o -name '*signed.apk' -o -name '*.aab' \) -print
+          APK=$(find src/TheDawn/bin/Release/net8.0-android -type f \( -name '*Signed.apk' -o -name '*-Signed.apk' -o -name '*signed.apk' \) | head -n 1)
+          AAB=$(find src/TheDawn/bin/Release/net8.0-android -type f -name '*.aab' | head -n 1 || true)
+          test -n "$APK"
+          cp "$APK" "$OUT/TheDawn-$HASH-signed.apk"
+          if [ -n "$AAB" ]; then cp "$AAB" "$OUT/TheDawn-$HASH-signed.aab"; fi
+
+      - name: Upload Android app
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheDawn-${{ github.sha }}-android
+          path: artifacts/android/*
+          if-no-files-found: error

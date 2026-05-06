@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net8.0-android</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TheDawn</RootNamespace>
+    <AssemblyName>TheDawn</AssemblyName>
+    <ApplicationTitle>The Dawn</ApplicationTitle>
+    <ApplicationId>com.the.dawn</ApplicationId>
+    <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net8.0-android'">23.0</SupportedOSPlatformVersion>
+    <AndroidManifest Condition="'$(TargetFramework)' == 'net8.0-android'">Platforms/Android/AndroidManifest.xml</AndroidManifest>
+    <AndroidPackageFormat Condition="'$(TargetFramework)' == 'net8.0-android'">apk</AndroidPackageFormat>
+    <MonoGamePlatform Condition="'$(TargetFramework)' == 'net8.0'">DesktopGL</MonoGamePlatform>
+    <MonoGamePlatform Condition="'$(TargetFramework)' == 'net8.0-android'">Android</MonoGamePlatform>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-android'">
+    <PackageReference Include="MonoGame.Framework.Android" Version="3.8.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Content/Assets/**/*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-android'">
+    <AndroidAsset Include="Content/Assets/**/*.*" Link="Content/Assets/%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidResource Include="Platforms/Android/Resources/**/*.xml" />
+    <AndroidResource Include="Platforms/Android/Resources/**/*.png" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net8.0-android'">
+    <Compile Remove="Platforms/Android/**/*.cs" />
+    <None Include="Platforms/Android/**" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-android'">
+    <Compile Remove="Program.cs" />
+  </ItemGroup>
+</Project>

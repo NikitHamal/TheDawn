@@ -1,0 +1,42 @@
+name: Build Windows
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build signed-style Windows package
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/TheDawn/TheDawn.csproj -f net8.0
+
+      - name: Publish Windows x64
+        shell: pwsh
+        run: |
+          $hash = "${{ github.sha }}".Substring(0, 12)
+          $out = "artifacts/windows/TheDawn-$hash-win-x64"
+          dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:DebugType=None -p:DebugSymbols=false -o $out
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=The Dawn Private CI" -CertStoreLocation "Cert:\CurrentUser\My"
+          Get-ChildItem "$out/*.exe" | ForEach-Object { Set-AuthenticodeSignature -FilePath $_.FullName -Certificate $cert | Out-Host }
+          Compress-Archive -Path "$out/*" -DestinationPath "artifacts/windows/TheDawn-$hash-win-x64.zip" -Force
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheDawn-${{ github.sha }}-windows
+          path: artifacts/windows/*.zip
+          if-no-files-found: error
