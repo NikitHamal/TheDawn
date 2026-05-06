@@ -78,3 +78,7 @@ The codebase is a first full playable vertical slice. It is structured for exten
 - Corrected several building/station source rectangles so workbench, sawmill, furnace, anvil, walls, traps, and farm plots do not display unrelated atlas regions.
 - Hid the mobile touch overlay on DesktopGL builds; it now only appears in Android builds.
 - Future agents should treat the first screenshot issue as an asset-atlas interpretation bug, not a gameplay-system bug.
+
+## Recent CI repair — restore framework flags
+
+GitHub Actions restore commands were corrected after CI reported `MSB1008: Only one project can be specified`. The cause was using `dotnet restore ... -f net8.0`; for `dotnet restore`, `-f` is the short form for force, not target framework, so `net8.0` became a second positional project argument. Workflows and README now use `-p:TargetFramework=net8.0` and `-p:TargetFramework=net8.0-android` for target-specific restores. A root `global.json` was also added to pin CI to the .NET 8 SDK feature band instead of accidentally using newer preinstalled SDKs.

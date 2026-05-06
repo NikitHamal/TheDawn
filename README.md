@@ -44,7 +44,7 @@ Install .NET 8 SDK and the appropriate MonoGame/Android workloads.
 ### Windows DesktopGL
 
 ```bash
-dotnet restore src/TheDawn/TheDawn.csproj -f net8.0
+dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0
 dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts/windows/TheDawn-win-x64
 ```
 
@@ -52,7 +52,7 @@ dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self
 
 ```bash
 dotnet workload install android
-dotnet restore src/TheDawn/TheDawn.csproj -f net8.0-android
+dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0-android
 dotnet publish src/TheDawn/TheDawn.csproj -f net8.0-android -c Release \
   -p:ApplicationId=com.the.dawn \
   -p:AndroidKeyStore=true \

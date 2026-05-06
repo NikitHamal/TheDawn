@@ -22,7 +22,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore
-        run: dotnet restore src/TheDawn/TheDawn.csproj -f net8.0
+        run: dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0
 
       - name: Publish Windows x64
         shell: pwsh

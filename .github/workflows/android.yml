@@ -34,7 +34,7 @@ jobs:
         run: keytool -list -keystore android-signing/the-dawn-default.keystore -storepass dawn-default-changeit -alias thedawn
 
       - name: Restore
-        run: dotnet restore src/TheDawn/TheDawn.csproj -f net8.0-android
+        run: dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0-android
 
       - name: Publish signed APK and AAB
         shell: bash
