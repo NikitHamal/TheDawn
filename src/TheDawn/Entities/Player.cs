@@ -3,6 +3,17 @@ using TheDawn.Data;
 
 namespace TheDawn.Entities;
 
+public enum PlayerVisualAction
+{
+    None,
+    Slice,
+    Crush,
+    Collect,
+    Fish,
+    Water,
+    Hit
+}
+
 public sealed class Player : Entity
 {
     public Inventory Inventory { get; set; } = new();
@@ -12,6 +23,8 @@ public sealed class Player : Entity
     public float ActionCooldown { get; set; }
     public float HungerClock { get; set; }
     public int DaysSurvived { get; set; }
+    public PlayerVisualAction VisualAction { get; set; }
+    public float VisualActionTimer { get; set; }
 
     public Player()
     {

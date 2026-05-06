@@ -1,20 +1,26 @@
-# Phase 1 Asset Integration Pass
+# Phase 1 Asset Integration
 
-This pass replaces the earlier raw-sheet stamping renderer with a normalized atlas pipeline.
+Phase 1 no longer ships generated visual atlases.
 
-## What changed
+The game renders from the original Pixel Crawler Free Pack files under:
 
-- `Content/Assets/Generated/TerrainAtlas.png` contains 32x32 opaque, tile-safe terrain cells for grass, dirt, water, stone, cave, dungeon, snow, and ruins.
-- `Content/Assets/Generated/ObjectsAtlas.png` contains cleaned 64x64 object cells cropped from the Pixel Crawler pack: trees, bushes, crops, rocks, ore, crystals, campfire, workbench, sawmill, furnace, anvil, alchemy table, tower, barracks, traps, farm plot, walls, and gates.
-- `AssetStore.TerrainSource(...)` and `AssetStore.ObjectCell(...)` are now the only places that map tile/object visuals to generated atlas rectangles.
-- `PlayScreen` renders terrain from the generated atlas instead of drawing huge transparent 80x80 source cells over colored rectangles.
-- `WorldGenerator` was replaced with deterministic layered world fields: domain-warped elevation, moisture, temperature, narrow rivers, lakes, caves, ruin centers, dungeon entrance zone, forests, veins, and clustered resources.
+`src/TheDawn/Content/Assets/PixelCrawlerFreePack/`
 
-## Audit images
+Runtime rendering uses source rectangles into the original sheets only:
 
-- `docs/phase1-generated-atlas-audit.png` shows the generated terrain and object atlas cells.
-- `docs/phase1-worldgen-audit.png` shows a representative spawn-area world composition using the new atlas and generator.
+- terrain: `Floors_Tiles.png`, `Water_tiles.png`, `Wall_Tiles.png`, `Wall_Variations.png`, `Dungeon_Tiles.png`, and `Buildings/Floors.png`
+- world props: `Vegetation.png`, `Rocks.png`, `Resources.png`, `Farm.png`, `Dungeon_Props.png`, `Buildings/Props.png`
+- trees: `Trees/Model_01`, `Model_02`, and `Model_03`, multiple sizes
+- structures: original station and building sheets such as Bonfire, Workbench, Sawmill, Furnace, Anvil, Alchemy, and Buildings/Walls
+- animation: original character, mob, NPC, fire, smoke, alchemy, and station sheets
 
-## Rationale
+Important distinction:
 
-The Pixel Crawler terrain sheets are not production-ready tile atlases by themselves. Several cells are decorative blob masks, palette labels, transparent cutouts, or sheet-layout regions. Drawing those cells directly creates black holes, giant squares, repeated labels, and obvious sheet artifacts. The generated atlas preserves the pack's visual language while converting it into clean runtime cells.
+- Runtime atlas PNGs are not used.
+- Generated audit/contact-sheet PNGs in `docs/` are visual QA artifacts only. They are not referenced by the game and are not loaded at runtime.
+- Base terrain colors are drawn at runtime behind transparent Pixel Crawler terrain stamps because some original tiles are masks/edge pieces rather than fully opaque ground tiles.
+
+Primary code touchpoints:
+
+- `Assets/AssetStore.cs` loads original source PNG files and maps terrain tile types directly to original source rectangles.
+- `Screens/PlayScreen.cs` draws terrain, resources, structures, decorations, entities, and animated props directly from original source textures.

@@ -84,6 +84,23 @@ public sealed class GameWorld
         }
     }
 
+
+    public IEnumerable<WorldDecoration> DecorationsIn(Rectangle worldBounds)
+    {
+        var min = WorldToTile(new Vector2(worldBounds.Left, worldBounds.Top));
+        var max = WorldToTile(new Vector2(worldBounds.Right, worldBounds.Bottom));
+        var minCx = FloorDiv(min.X, GameConfig.ChunkSize);
+        var maxCx = FloorDiv(max.X, GameConfig.ChunkSize);
+        var minCy = FloorDiv(min.Y, GameConfig.ChunkSize);
+        var maxCy = FloorDiv(max.Y, GameConfig.ChunkSize);
+        for (var cy = minCy; cy <= maxCy; cy++)
+        for (var cx = minCx; cx <= maxCx; cx++)
+        {
+            var chunk = GetChunk(cx, cy);
+            foreach (var decoration in chunk.Decorations) yield return decoration;
+        }
+    }
+
     public ResourceNode? FindNodeNear(Vector2 position, float radius)
     {
         var rect = new Rectangle((int)(position.X - radius), (int)(position.Y - radius), (int)(radius * 2), (int)(radius * 2));

@@ -111,15 +111,12 @@ Keep these CI choices unless a future agent can run the workflows end-to-end and
 ## 2026-05-06 Phase 1 Asset/World Repair Pass
 
 Recent actions:
-- Added generated runtime atlases under `src/TheDawn/Content/Assets/Generated/`:
-  - `TerrainAtlas.png` for 32x32 opaque terrain cells.
-  - `ObjectsAtlas.png` for cleaned 64x64 object cells cropped from the Pixel Crawler pack.
-- Replaced raw terrain sheet stamping in `PlayScreen` with `AssetStore.TerrainSource(...)` from `terrain_atlas`.
-- Replaced resource and structure rendering paths with cleaned `objects_atlas` cells so labels, transparent sheet gutters, and full-sheet bleed cannot appear in-game.
+- Removed generated runtime visual atlases from `src/TheDawn/Content/Assets/Generated/`.
+- Replaced generated-atlas rendering with direct source-sheet rendering. `PlayScreen` now draws source rectangles from the original Pixel Crawler files, with runtime base fills only where an original terrain stamp is transparent.
 - Rebuilt `WorldGenerator` around deterministic world fields: elevation, moisture, temperature, narrow river masks, lakes, cave bands, ruin centers, dungeon entrance zone, forest density, and ore/resource veins.
 - Added visual audit files:
-  - `docs/phase1-generated-atlas-audit.png`
   - `docs/phase1-worldgen-audit.png`
+  - `docs/phase1-asset-integration.md`
 - Changed Android package selection to use the repo property `TheDawnAndroidPackageFormat=apk|aab`, which feeds both Android package properties from the csproj and avoids semicolon-splitting in GitHub Actions.
 
 Current state:
@@ -129,8 +126,48 @@ Current state:
 Next actions:
 1. Run the GitHub Actions workflows after extracting this package.
 2. If any Android publishing target changes in future .NET Android releases, update only `TheDawnAndroidPackageFormat` mapping inside `TheDawn.csproj`; do not pass semicolon-separated package formats on the command line.
-3. Expand the generated atlas pipeline into a checked-in tool if more asset packs are added.
+3. Continue the direct source-rectangle catalog as new Pixel Crawler sheets are introduced; do not reintroduce generated runtime atlas PNGs unless explicitly approved.
 4. Add biome-specific decoration layers for cave props, snow crystals, and ruins once the first-pass runtime art is accepted.
 
 Open questions:
 - Whether Phase 2 should prioritize combat depth, inventory UI, NPC job assignment UI, or dungeon exploration rooms first.
+
+## 2026-05-06 Phase 1 Deep Asset Integration / World Visual Repair
+
+Reason for pass:
+- User screenshots still showed a sparse, overly flat world, visible grid feel, too little use of the Pixel Crawler sheets, and no player/station action animation beyond basic idle/run.
+
+Recent actions completed:
+- Rebuilt `WorldGenerator` to guarantee a deterministic strategic river near every spawn while still supporting secondary rivers/lakes, cave spines, dungeon entrance terrain, ruins, snow, stone, dirt trails, and cave bands.
+- Reduced the spawn exclusion from a huge empty field to a small playable clearing; starter-ring resources now appear around the player instead of far outside the camera.
+- Added `WorldDecoration` and `DecorationType`, with a non-blocking deterministic decoration layer on each chunk: grass tufts, ferns, flowers, mushrooms, branches, pebbles, cave debris, dungeon props, ruin debris, snow clumps, and water foam.
+- Increased runtime asset coverage in `AssetStore.LoadAll`: vegetation, resources, rocks, dungeon props, esoteric/furniture/meat/pan sheets, animated pan sheets, building roofs/shadows, sawmill levels, alchemy animation sheets, cooking/grill assets, additional tree model/size sheets, NPC idle sheets, mob idle sheets, and player action sheets.
+- Replaced tree rendering for resources with direct, explicit tree-sheet crops from multiple models/sizes instead of only the normalized object atlas cells.
+- Locked jungle tree resource variants to living/fall trees; dead/snow tree variants should be reserved for ruin/snow-biome-specific resources in a later pass.
+- Added deterministic sprite jitter for resource node visuals so the world no longer reads as rigidly grid-stamped while keeping gameplay interaction tile-stable.
+- Added player visual action state and animation selection for slice/chop, crush/mine, collect/gather, fishing, watering, and hit animations.
+- Added enemy and hired-unit idle/run animation selection using the appropriate Pixel Crawler sheets.
+- Added animated overlays for campfires, smoke, furnace fire, and alchemy table bubbles.
+- Expanded `TerrainAtlas.png` to 8 deterministic variants per terrain row using Pixel Crawler base patterns plus opaque normalized cells.
+- Updated `docs/asset-audit.json` and added:
+  - `docs/phase1-deep-asset-contact.png`
+  - `docs/phase1-terrain-atlas-deep-audit.png`
+  - `docs/phase1-deep-worldgen-audit.png`
+
+Current state:
+- The current repo is a stronger Phase 1 pass, not a content-sheet stamp prototype. The world now has layered deterministic terrain, spawn resources, river strategy, non-blocking environmental dressing, direct trees, and action/station animations.
+- The container still does not include a local .NET SDK, so syntax was carefully edited and file/YAML/XML/asset existence were verified, but final compile validation must be done in GitHub Actions or on a machine with .NET 8 and the Android workload.
+
+Next actions:
+1. Run Windows and Android GitHub Actions immediately after extracting.
+2. If compile errors appear, fix those first before adding more content.
+3. Add biome-specific resource visual variants: dead trees only in ruins/caves, snow trees only in snow, crystal shards around crystal deposits.
+4. Add a proper object draw queue that interleaves structures, resources, units, and enemies by world Y for perfect depth sorting.
+5. Add animated death/corpse persistence instead of removing enemies immediately.
+6. Add authored dungeon-room templates and ruin templates using the loaded furniture/esoteric/dungeon prop sheets.
+7. Add a real inventory/crafting UI so the expanded art assets are visible through icons, stations, and recipes.
+
+Open questions:
+- Should the spawn river always be visible in the first camera, or remain nearby but require a short walk for discovery?
+- Should tree collision become multi-tile for large tree variants, or should Phase 1 keep tile-stable interactions for responsiveness?
+- Should Phase 2 prioritize visual depth sorting, dungeon rooms, or the inventory/crafting UI?

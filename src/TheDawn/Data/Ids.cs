@@ -42,6 +42,25 @@ public enum ResourceType
     GoldVein
 }
 
+public enum DecorationType
+{
+    GrassTuft,
+    Fern,
+    Flower,
+    Mushroom,
+    FallenLeaves,
+    Pebble,
+    Branch,
+    Stump,
+    WaterFoam,
+    Reed,
+    CaveDebris,
+    DungeonRelic,
+    RuinDebris,
+    SnowClump,
+    CrystalShard
+}
+
 public enum StructureType
 {
     WoodWall,

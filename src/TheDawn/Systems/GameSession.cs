@@ -177,6 +177,8 @@ public sealed class GameSession
     {
         Player.AttackCooldown = Math.Max(0, Player.AttackCooldown - dt);
         Player.ActionCooldown = Math.Max(0, Player.ActionCooldown - dt);
+        Player.VisualActionTimer = Math.Max(0, Player.VisualActionTimer - dt);
+        if (Player.VisualActionTimer <= 0) Player.VisualAction = PlayerVisualAction.None;
         Player.AnimationTime += dt;
         Player.HungerClock += dt;
         if (Player.HungerClock >= 45f)
@@ -218,6 +220,7 @@ public sealed class GameSession
             if (enemy != null && Vector2.Distance(enemy.Position, Player.Position) <= Player.AttackRange)
             {
                 Player.AttackCooldown = 0.45f;
+                StartPlayerVisualAction(PlayerVisualAction.Slice, 0.42f);
                 enemy.TakeDamage(Player.AttackDamage);
                 if (!enemy.IsAlive) LootEnemy(enemy);
                 return;
@@ -229,6 +232,7 @@ public sealed class GameSession
         if (node != null)
         {
             Player.ActionCooldown = 0.42f;
+            StartPlayerVisualAction(node.Type is ResourceType.Tree ? PlayerVisualAction.Slice : node.Type is ResourceType.Rock or ResourceType.IronOre or ResourceType.CrystalDeposit or ResourceType.GoldVein ? PlayerVisualAction.Crush : PlayerVisualAction.Collect, 0.42f);
             var damage = node.Type is ResourceType.Tree ? 12 : 10 + Player.WeaponTier * 2;
             node.Health -= damage;
             if (node.Health <= 0)
@@ -245,6 +249,7 @@ public sealed class GameSession
         if (IsAdjacentToWater(tile))
         {
             Player.ActionCooldown = 2.25f;
+            StartPlayerVisualAction(PlayerVisualAction.Fish, 0.95f);
             Player.Inventory.Add(ItemId.Fish, 1);
             SetMessage("Caught fish.", 2.5f);
             return;
@@ -254,8 +259,16 @@ public sealed class GameSession
         {
             structure.Health = Math.Min(structure.MaxHealth, structure.Health + 20);
             Player.ActionCooldown = 0.4f;
+            StartPlayerVisualAction(PlayerVisualAction.Collect, 0.36f);
             SetMessage("Repaired structure.", 2f);
         }
+    }
+
+    private void StartPlayerVisualAction(PlayerVisualAction action, float seconds)
+    {
+        Player.VisualAction = action;
+        Player.VisualActionTimer = seconds;
+        Player.AnimationTime = 0;
     }
 
     private bool IsAdjacentToWater(TilePoint tile)
@@ -321,6 +334,7 @@ public sealed class GameSession
     {
         foreach (var unit in Units.Where(u => u.IsAlive))
         {
+            unit.Velocity = Vector2.Zero;
             unit.AnimationTime += dt;
             unit.AttackTimer = Math.Max(0, unit.AttackTimer - dt);
             unit.WorkTimer += dt;
@@ -388,6 +402,7 @@ public sealed class GameSession
     {
         foreach (var enemy in Enemies.Where(e => e.IsAlive))
         {
+            enemy.Velocity = Vector2.Zero;
             enemy.AnimationTime += dt;
             enemy.AttackTimer = Math.Max(0, enemy.AttackTimer - dt);
             enemy.PathTimer -= dt;
@@ -460,6 +475,7 @@ public sealed class GameSession
         if (delta.LengthSquared() < 4) return;
         delta.Normalize();
         entity.Facing = Math.Abs(delta.X) > Math.Abs(delta.Y) ? (delta.X < 0 ? Facing.Left : Facing.Right) : (delta.Y < 0 ? Facing.Up : Facing.Down);
+        entity.Velocity = delta;
         var step = delta * speed * dt;
         TryMove(entity, new Vector2(step.X, 0), unitsCanPassGates);
         TryMove(entity, new Vector2(0, step.Y), unitsCanPassGates);

@@ -22,6 +22,16 @@ public sealed class ResourceNode
     public bool IsDepleted => Health <= 0;
 }
 
+public sealed class WorldDecoration
+{
+    public DecorationType Type { get; init; }
+    public TilePoint Tile { get; init; }
+    public Vector2 Offset { get; init; }
+    public int Variant { get; init; }
+    public bool Flip { get; init; }
+    public float Scale { get; init; } = 1f;
+}
+
 public sealed class Structure
 {
     public Guid Id { get; init; } = Guid.NewGuid();
@@ -39,6 +49,7 @@ public sealed class Chunk
     public int ChunkY { get; }
     public TileType[] Tiles { get; }
     public List<ResourceNode> Nodes { get; } = new();
+    public List<WorldDecoration> Decorations { get; } = new();
 
     public Chunk(int chunkX, int chunkY)
     {

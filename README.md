@@ -118,9 +118,27 @@ The Android workflow intentionally publishes twice, once with `-p:AndroidPackage
 
 The runtime no longer stamps raw Pixel Crawler sheet cells into the world. The source pack includes palette labels, transparent gutters, and decorative blob cells that are not safe to draw as terrain tiles directly. Phase 1 now ships generated runtime atlases:
 
-- `src/TheDawn/Content/Assets/Generated/TerrainAtlas.png` - opaque 32x32 terrain cells.
-- `src/TheDawn/Content/Assets/Generated/ObjectsAtlas.png` - cleaned object/structure/resource cells.
-- `docs/phase1-generated-atlas-audit.png` - generated atlas audit.
+- The game now renders directly from original Pixel Crawler source sheets. No generated runtime visual atlases are shipped.
+- `docs/phase1-asset-integration.md` documents the direct source-rectangle mapping approach.
 - `docs/phase1-worldgen-audit.png` - representative world-generation audit.
 
 Android packaging is selected with `TheDawnAndroidPackageFormat=apk` or `TheDawnAndroidPackageFormat=aab`, which is mapped inside the csproj. Do not pass semicolon-separated Android package format values in CI.
+
+## Phase 1 deep asset/world pass
+
+This package includes an additional repair pass over the earlier Phase 1 visuals:
+
+- A deterministic non-blocking decoration layer was added to chunks, using vegetation, rocks, resources, dungeon props, building props, snow/water detail, and ruin/cave dressing.
+- Spawn generation now creates a small safe clearing instead of a large empty green field, with starter-ring jungle resources near the player.
+- Every seed now has a deterministic strategic river near spawn, plus secondary rivers/lakes, cave spines, dungeon trail pressure, ruins, snow, stone, and cave bands.
+- Tree resources use direct Pixel Crawler tree sheet crops from multiple models and sizes, with deterministic visual offsets to reduce grid stamping while keeping tile-stable interaction.
+- Player actions now display Pixel Crawler action animations for chopping/slicing, mining/crushing, gathering, fishing, watering, and hit reactions.
+- NPCs and mobs now use idle/run animation selection instead of always running.
+- Campfire/fire/smoke/furnace/alchemy now have animated overlays.
+- The generated terrain atlas now provides eight variants per terrain type.
+
+Audit images are available in `docs/`:
+
+- `phase1-deep-asset-contact.png`
+- direct source-sheet visual audit docs; generated runtime visual atlases removed.
+- `phase1-deep-worldgen-audit.png`

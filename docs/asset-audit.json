@@ -1,6 +1,17 @@
 {
   "source": "Pixel Crawler - Free Pack 2.0.4",
   "png_count": 169,
+  "phase1_deep_integration": {
+    "runtime_loads": "AssetStore.LoadAll now registers terrain, water, dungeon, building, station, vegetation, tree, weapon, player, NPC, mob, and animated prop sheets used by phase 1.",
+    "visual_systems": [
+      "8-variant generated TerrainAtlas",
+      "direct tree sheet crops for multiple tree models and sizes",
+      "deterministic non-blocking decoration layer",
+      "animated player actions",
+      "animated campfire/fire/smoke/furnace overlays",
+      "idle/run NPC and enemy animations"
+    ]
+  },
   "files": [
     {
       "path": "Entities/Characters/Body_A/Animations/Carry_Idle/Carry_Idle_Down-Sheet.png",
