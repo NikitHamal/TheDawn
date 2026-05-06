@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net8.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net8.0;net8.0-android</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>TheDawn</RootNamespace>
     <AssemblyName>TheDawn</AssemblyName>

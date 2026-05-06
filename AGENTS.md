@@ -82,3 +82,12 @@ The codebase is a first full playable vertical slice. It is structured for exten
 ## Recent CI repair — restore framework flags
 
 GitHub Actions restore commands were corrected after CI reported `MSB1008: Only one project can be specified`. The cause was using `dotnet restore ... -f net8.0`; for `dotnet restore`, `-f` is the short form for force, not target framework, so `net8.0` became a second positional project argument. Workflows and README now use `-p:TargetFramework=net8.0` and `-p:TargetFramework=net8.0-android` for target-specific restores. A root `global.json` was also added to pin CI to the .NET 8 SDK feature band instead of accidentally using newer preinstalled SDKs.
+
+## 2026-05-06 CI Repair Pass 2
+
+CI logs showed two workflow issues:
+
+1. The Windows workflow still evaluated the Android target during `dotnet publish`, which failed on `windows-latest` because the Android workload is not installed there. The fix is to constrain both restore and publish with `-p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0`, and publish with `--no-restore` so the publish step does not perform a fresh multi-target restore.
+2. The Android workflow passed `AndroidPackageFormats=apk;aab` as a semicolon-delimited command-line property. MSBuild parsed `aab` as a separate switch in CI. The fix is to build APK and AAB in two explicit `dotnet publish` commands using singular `-p:AndroidPackageFormat=apk` and `-p:AndroidPackageFormat=aab`.
+
+The project file now declares default target frameworks only when `$(TargetFrameworks)` is empty, which lets CI intentionally constrain each workflow to one platform target.

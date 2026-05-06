@@ -21,17 +21,32 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
-        run: dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0
+      - name: Restore Desktop target only
+        run: dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
 
       - name: Publish Windows x64
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $hash = "${{ github.sha }}".Substring(0, 12)
           $out = "artifacts/windows/TheDawn-$hash-win-x64"
-          dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:DebugType=None -p:DebugSymbols=false -o $out
+          dotnet publish src/TheDawn/TheDawn.csproj `
+            -f net8.0 `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:TargetFramework=net8.0 `
+            -p:TargetFrameworks=net8.0 `
+            -p:PublishSingleFile=true `
+            -p:PublishReadyToRun=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o $out
+          $exeFiles = Get-ChildItem -Path $out -Filter *.exe -File
+          if ($exeFiles.Count -eq 0) { throw "No Windows executable was produced in $out" }
           $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=The Dawn Private CI" -CertStoreLocation "Cert:\CurrentUser\My"
-          Get-ChildItem "$out/*.exe" | ForEach-Object { Set-AuthenticodeSignature -FilePath $_.FullName -Certificate $cert | Out-Host }
+          $exeFiles | ForEach-Object { Set-AuthenticodeSignature -FilePath $_.FullName -Certificate $cert | Out-Host }
           Compress-Archive -Path "$out/*" -DestinationPath "artifacts/windows/TheDawn-$hash-win-x64.zip" -Force
 
       - name: Upload Windows app

@@ -44,23 +44,39 @@ Install .NET 8 SDK and the appropriate MonoGame/Android workloads.
 ### Windows DesktopGL
 
 ```bash
-dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0
-dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o artifacts/windows/TheDawn-win-x64
+dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self-contained true --no-restore -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0 -p:PublishSingleFile=true -o artifacts/windows/TheDawn-win-x64
 ```
 
 ### Android
 
 ```bash
 dotnet workload install android
-dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0-android
-dotnet publish src/TheDawn/TheDawn.csproj -f net8.0-android -c Release \
+dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0-android -p:TargetFrameworks=net8.0-android
+
+# APK
+dotnet publish src/TheDawn/TheDawn.csproj -f net8.0-android -c Release --no-restore \
+  -p:TargetFramework=net8.0-android \
+  -p:TargetFrameworks=net8.0-android \
   -p:ApplicationId=com.the.dawn \
   -p:AndroidKeyStore=true \
   -p:AndroidSigningKeyStore=android-signing/the-dawn-default.keystore \
   -p:AndroidSigningKeyAlias=thedawn \
   -p:AndroidSigningStorePass=dawn-default-changeit \
   -p:AndroidSigningKeyPass=dawn-default-changeit \
-  -p:AndroidPackageFormats=apk,aab
+  -p:AndroidPackageFormat=apk
+
+# AAB
+dotnet publish src/TheDawn/TheDawn.csproj -f net8.0-android -c Release --no-restore \
+  -p:TargetFramework=net8.0-android \
+  -p:TargetFrameworks=net8.0-android \
+  -p:ApplicationId=com.the.dawn \
+  -p:AndroidKeyStore=true \
+  -p:AndroidSigningKeyStore=android-signing/the-dawn-default.keystore \
+  -p:AndroidSigningKeyAlias=thedawn \
+  -p:AndroidSigningStorePass=dawn-default-changeit \
+  -p:AndroidSigningKeyPass=dawn-default-changeit \
+  -p:AndroidPackageFormat=aab
 ```
 
 ## CI outputs
