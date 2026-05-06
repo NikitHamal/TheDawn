@@ -12,7 +12,9 @@
     <Nullable>enable</Nullable>
     <SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net8.0-android'">23.0</SupportedOSPlatformVersion>
     <AndroidManifest Condition="'$(TargetFramework)' == 'net8.0-android'">Platforms/Android/AndroidManifest.xml</AndroidManifest>
-    <AndroidPackageFormat Condition="'$(TargetFramework)' == 'net8.0-android'">apk</AndroidPackageFormat>
+    <TheDawnAndroidPackageFormat Condition="'$(TheDawnAndroidPackageFormat)' == ''">apk</TheDawnAndroidPackageFormat>
+    <AndroidPackageFormat Condition="'$(TargetFramework)' == 'net8.0-android'">$(TheDawnAndroidPackageFormat)</AndroidPackageFormat>
+    <AndroidPackageFormats Condition="'$(TargetFramework)' == 'net8.0-android'">$(TheDawnAndroidPackageFormat)</AndroidPackageFormats>
     <MonoGamePlatform Condition="'$(TargetFramework)' == 'net8.0'">DesktopGL</MonoGamePlatform>
     <RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net8.0'">win-x64</RuntimeIdentifiers>
     <MonoGamePlatform Condition="'$(TargetFramework)' == 'net8.0-android'">Android</MonoGamePlatform>

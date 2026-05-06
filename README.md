@@ -4,7 +4,7 @@
 
 ## Current playable phase
 
-This repository is a full first playable vertical slice with production-oriented modular code rather than a throwaway prototype. It includes:
+This repository is a full first playable vertical slice with production-oriented modular code. It includes:
 
 - MonoGame DesktopGL Windows target and MonoGame Android target.
 - Main menu, create world, load world, options/controls, and loading screen.
@@ -113,3 +113,14 @@ src/TheDawn
 The Windows workflow restores the desktop target with `-r win-x64` before publishing with `--no-restore`; this is required so `project.assets.json` contains the `net8.0/win-x64` target used by the self-contained Windows publish. Windows CI now publishes with `-p:PublishReadyToRun=false` because the hosted runner restore did not provide a valid ReadyToRun runtime package for this MonoGame DesktopGL publish, causing `NETSDK1094`.
 
 The Android workflow intentionally publishes twice, once with `-p:AndroidPackageFormat=apk` and once with `-p:AndroidPackageFormat=aab`. Do not combine these into `apk;aab` on the command line; GitHub Actions/MSBuild treated `aab` as a stray switch in CI.
+
+## Phase 1 visual/world-generation repair
+
+The runtime no longer stamps raw Pixel Crawler sheet cells into the world. The source pack includes palette labels, transparent gutters, and decorative blob cells that are not safe to draw as terrain tiles directly. Phase 1 now ships generated runtime atlases:
+
+- `src/TheDawn/Content/Assets/Generated/TerrainAtlas.png` - opaque 32x32 terrain cells.
+- `src/TheDawn/Content/Assets/Generated/ObjectsAtlas.png` - cleaned object/structure/resource cells.
+- `docs/phase1-generated-atlas-audit.png` - generated atlas audit.
+- `docs/phase1-worldgen-audit.png` - representative world-generation audit.
+
+Android packaging is selected with `TheDawnAndroidPackageFormat=apk` or `TheDawnAndroidPackageFormat=aab`, which is mapped inside the csproj. Do not pass semicolon-separated Android package format values in CI.

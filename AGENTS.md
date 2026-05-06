@@ -107,3 +107,30 @@ Latest CI logs showed:
 2. Android still failed with `MSB1006: Switch: aab`, meaning semicolon package formats were still being split before or inside MSBuild. The workflow now publishes APK and AAB in two independent `dotnet publish` calls using singular `AndroidPackageFormat` values.
 
 Keep these CI choices unless a future agent can run the workflows end-to-end and prove a different configuration works.
+
+## 2026-05-06 Phase 1 Asset/World Repair Pass
+
+Recent actions:
+- Added generated runtime atlases under `src/TheDawn/Content/Assets/Generated/`:
+  - `TerrainAtlas.png` for 32x32 opaque terrain cells.
+  - `ObjectsAtlas.png` for cleaned 64x64 object cells cropped from the Pixel Crawler pack.
+- Replaced raw terrain sheet stamping in `PlayScreen` with `AssetStore.TerrainSource(...)` from `terrain_atlas`.
+- Replaced resource and structure rendering paths with cleaned `objects_atlas` cells so labels, transparent sheet gutters, and full-sheet bleed cannot appear in-game.
+- Rebuilt `WorldGenerator` around deterministic world fields: elevation, moisture, temperature, narrow river masks, lakes, cave bands, ruin centers, dungeon entrance zone, forest density, and ore/resource veins.
+- Added visual audit files:
+  - `docs/phase1-generated-atlas-audit.png`
+  - `docs/phase1-worldgen-audit.png`
+- Changed Android package selection to use the repo property `TheDawnAndroidPackageFormat=apk|aab`, which feeds both Android package properties from the csproj and avoids semicolon-splitting in GitHub Actions.
+
+Current state:
+- Phase 1 is a playable survival build with deterministic world generation, cleaned asset integration, day/dusk/night/dawn cycle, gathering, building, hiring, raids, save/load, permadeath archive, and CI workflows.
+- The container used for this handoff still does not include `dotnet`; perform final `dotnet restore`, `dotnet publish -f net8.0 -r win-x64`, and `dotnet publish -f net8.0-android` validation on a machine/runner with the SDK and Android workload.
+
+Next actions:
+1. Run the GitHub Actions workflows after extracting this package.
+2. If any Android publishing target changes in future .NET Android releases, update only `TheDawnAndroidPackageFormat` mapping inside `TheDawn.csproj`; do not pass semicolon-separated package formats on the command line.
+3. Expand the generated atlas pipeline into a checked-in tool if more asset packs are added.
+4. Add biome-specific decoration layers for cave props, snow crystals, and ruins once the first-pass runtime art is accepted.
+
+Open questions:
+- Whether Phase 2 should prioritize combat depth, inventory UI, NPC job assignment UI, or dungeon exploration rooms first.

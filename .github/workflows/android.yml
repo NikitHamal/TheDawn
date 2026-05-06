@@ -69,7 +69,7 @@ jobs:
             -p:TargetFramework=net8.0-android \
             -p:TargetFrameworks=net8.0-android \
             "${SIGNING_ARGS[@]}" \
-            -p:AndroidPackageFormat=apk
+            -p:TheDawnAndroidPackageFormat=apk
 
           APK="$(find "$BUILD_ROOT" -type f \( -name '*Signed.apk' -o -name '*-Signed.apk' -o -name '*signed.apk' -o -name '*.apk' \) | sort | tail -n 1)"
           if [ -z "$APK" ]; then
@@ -86,7 +86,7 @@ jobs:
             -p:TargetFramework=net8.0-android \
             -p:TargetFrameworks=net8.0-android \
             "${SIGNING_ARGS[@]}" \
-            -p:AndroidPackageFormat=aab
+            -p:TheDawnAndroidPackageFormat=aab
 
           AAB="$(find "$BUILD_ROOT" -type f -name '*.aab' | sort | tail -n 1)"
           if [ -z "$AAB" ]; then

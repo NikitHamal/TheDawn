@@ -7,6 +7,7 @@ namespace TheDawn.Assets;
 public sealed class AssetStore
 {
     private const string Root = "Content/Assets/PixelCrawlerFreePack";
+    private const string GeneratedRoot = "Content/Assets/Generated";
     private readonly GraphicsDevice _graphics;
     private readonly Dictionary<string, Texture2D> _textures = new(StringComparer.OrdinalIgnoreCase);
 
@@ -20,6 +21,9 @@ public sealed class AssetStore
 
     public void LoadAll()
     {
+        LoadGenerated("terrain_atlas", "TerrainAtlas.png");
+        LoadGenerated("objects_atlas", "ObjectsAtlas.png");
+
         Load("floors", "Environment/Tilesets/Floors_Tiles.png");
         Load("water", "Environment/Tilesets/Water_tiles.png");
         Load("walls", "Environment/Tilesets/Wall_Tiles.png");
@@ -33,6 +37,7 @@ public sealed class AssetStore
         Load("rocks", "Environment/Props/Static/Rocks.png");
         Load("farm", "Environment/Props/Static/Farm.png");
         Load("tools", "Environment/Props/Static/Tools.png");
+        Load("dungeon_props", "Environment/Props/Static/Dungeon_Props.png");
         Load("tree_a", "Environment/Props/Static/Trees/Model_01/Size_02.png");
         Load("tree_b", "Environment/Props/Static/Trees/Model_02/Size_02.png");
         Load("tree_c", "Environment/Props/Static/Trees/Model_03/Size_02.png");
@@ -72,6 +77,14 @@ public sealed class AssetStore
         _textures[id] = texture;
     }
 
+    private void LoadGenerated(string id, string relativePath)
+    {
+        using var stream = OpenStream($"{GeneratedRoot}/{relativePath}");
+        var texture = Texture2D.FromStream(_graphics, stream);
+        texture.Name = id;
+        _textures[id] = texture;
+    }
+
     private static Stream OpenStream(string path)
     {
         try
@@ -96,52 +109,27 @@ public sealed class AssetStore
         }
     }
 
-    public static string TileTextureId(TileType tile) => tile switch
+    public static Rectangle TerrainSource(TileType tile, int x, int y)
     {
-        TileType.Water => "water",
-        TileType.DungeonFloor or TileType.RuinFloor => "dungeon",
-        _ => "floors"
-    };
-
-    public static Color TileBaseColor(TileType tile, int x, int y)
-    {
-        var delta = (StableHash(x, y, 19) % 15) - 7;
-        var baseColor = tile switch
+        var row = tile switch
         {
-            TileType.Grass => new Color(40, 112, 24),
-            TileType.Dirt => new Color(108, 77, 44),
-            TileType.Stone => new Color(80, 84, 80),
-            TileType.CaveFloor => new Color(45, 49, 48),
-            TileType.DungeonFloor => new Color(31, 38, 43),
-            TileType.Snow => new Color(172, 190, 214),
-            TileType.RuinFloor => new Color(58, 55, 50),
-            TileType.Water => new Color(52, 135, 204),
-            _ => new Color(40, 112, 24)
+            TileType.Grass => 0,
+            TileType.Dirt => 1,
+            TileType.Water => 2,
+            TileType.Stone => 3,
+            TileType.CaveFloor => 4,
+            TileType.DungeonFloor => 5,
+            TileType.Snow => 6,
+            TileType.RuinFloor => 7,
+            _ => 0
         };
-        return Shade(baseColor, delta);
+        var variant = StableHash(x, y, 37) & 3;
+        return AtlasCell(variant, row, 32);
     }
 
-    public static Rectangle? TileOverlaySource(TileType tile, int x, int y)
-    {
-        var variant = StableHash(x, y, 37) & 7;
-        return tile switch
-        {
-            TileType.Grass => variant switch
-            {
-                0 => new Rectangle(0, 0, 80, 80),
-                1 => new Rectangle(0, 80, 80, 80),
-                _ => null
-            },
-            TileType.Dirt => variant < 5 ? new Rectangle(160, variant % 2 == 0 ? 0 : 80, 80, 80) : null,
-            TileType.Stone => new Rectangle(240, 0, 80, 80),
-            TileType.CaveFloor => variant < 6 ? new Rectangle(320, 0, 80, 80) : null,
-            TileType.DungeonFloor => new Rectangle((variant % 2) * 80, 0, 80, 80),
-            TileType.RuinFloor => new Rectangle(240, 0, 80, 80),
-            TileType.Snow => variant < 6 ? new Rectangle(0, 240 + (variant % 2) * 80, 80, 80) : null,
-            TileType.Water => new Rectangle((variant & 1) * 80, 80 + ((variant >> 1) & 1) * 80, 80, 80),
-            _ => null
-        };
-    }
+    public static Rectangle ObjectCell(int index, int cellSize = 64) => AtlasCell(index % 8, index / 8, cellSize);
+
+    private static Rectangle AtlasCell(int column, int row, int cellSize) => new(column * cellSize, row * cellSize, cellSize, cellSize);
 
     public static int StableHash(int x, int y, int salt)
     {
@@ -155,11 +143,5 @@ public sealed class AssetStore
             h = (h ^ (uint)salt) * 16777619u;
             return (int)(h & 0x7FFFFFFF);
         }
-    }
-
-    private static Color Shade(Color color, int delta)
-    {
-        static byte Clamp(int value) => (byte)Math.Clamp(value, 0, 255);
-        return new Color(Clamp(color.R + delta), Clamp(color.G + delta), Clamp(color.B + delta), color.A);
     }
 }

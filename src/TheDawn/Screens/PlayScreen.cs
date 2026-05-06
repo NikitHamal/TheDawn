@@ -87,12 +87,7 @@ public sealed class PlayScreen : IGameScreen
             {
                 var tile = _session.World.GetTile(x, y);
                 var tileRect = new Rectangle(x * GameConfig.TileSize, y * GameConfig.TileSize, GameConfig.TileSize, GameConfig.TileSize);
-                DrawTextureWorld(batch, _game.Pixel, tileRect, null, AssetStore.TileBaseColor(tile, x, y));
-                var overlay = AssetStore.TileOverlaySource(tile, x, y);
-                if (overlay.HasValue)
-                {
-                    DrawTextureWorld(batch, _game.Assets.Texture(AssetStore.TileTextureId(tile)), tileRect, overlay, Color.White);
-                }
+                DrawTextureWorld(batch, _game.Assets.Texture("terrain_atlas"), tileRect, AssetStore.TerrainSource(tile, x, y), Color.White);
             }
         }
 
@@ -110,22 +105,8 @@ public sealed class PlayScreen : IGameScreen
 
     private void DrawNode(SpriteBatch batch, ResourceNode node)
     {
-        if (node.Type == ResourceType.Tree)
-        {
-            var source = TreeSource(node);
-            var size = node.SpriteId switch
-            {
-                "tree_b" => new Vector2(46, 58),
-                "tree_c" => new Vector2(50, 72),
-                _ => new Vector2(54, 66)
-            };
-            DrawSpriteWorld(batch, _game.Assets.Texture(node.SpriteId), node.Tile.CenterWorld + new Vector2(0, 18), source, size, new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
-        }
-        else
-        {
-            var (textureId, source, size, offset) = ResourceVisual(node);
-            DrawSpriteWorld(batch, _game.Assets.Texture(textureId), node.Tile.CenterWorld + offset, source, size, new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
-        }
+        var visual = NodeVisual(node);
+        DrawSpriteWorld(batch, _game.Assets.Texture("objects_atlas"), node.Tile.CenterWorld + visual.Offset, visual.Source, visual.Size, new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
         if (node.Health < node.MaxHealth)
         {
             var screen = _camera.WorldToScreen(node.Tile.CenterWorld + new Vector2(-16, -20), _game.BackBufferWidth, _game.BackBufferHeight);
@@ -133,98 +114,68 @@ public sealed class PlayScreen : IGameScreen
         }
     }
 
-    private static Rectangle TreeSource(ResourceNode node)
+    private static (Rectangle Source, Vector2 Size, Vector2 Offset) NodeVisual(ResourceNode node)
     {
-        var variant = (int)(node.Id & 3);
-        return node.SpriteId switch
-        {
-            "tree_b" => new Rectangle((variant & 1) * 64, (variant >> 1) * 48, 64, 48),
-            "tree_c" => new Rectangle((variant & 1) * 64, (variant >> 1) * 80, 64, 80),
-            _ => variant switch
-            {
-                0 => new Rectangle(0, 0, 64, 64),
-                1 => new Rectangle(64, 0, 64, 64),
-                2 => new Rectangle(0, 64, 64, 64),
-                _ => new Rectangle(64, 64, 64, 64)
-            }
-        };
-    }
-
-    private static (string TextureId, Rectangle Source, Vector2 Size, Vector2 Offset) ResourceVisual(ResourceNode node)
-    {
-        var variant = (int)(node.Id & 3);
+        var variant = (int)((node.Id >> 8) & 7);
         return node.Type switch
         {
-            ResourceType.Rock => variant switch
-            {
-                0 => ("rocks", new Rectangle(32, 4, 34, 44), new Vector2(27, 35), new Vector2(0, 10)),
-                1 => ("rocks", new Rectangle(66, 2, 38, 36), new Vector2(30, 28), new Vector2(0, 10)),
-                2 => ("rocks", new Rectangle(114, 4, 34, 44), new Vector2(27, 35), new Vector2(0, 10)),
-                _ => ("rocks", new Rectangle(146, 2, 40, 36), new Vector2(31, 28), new Vector2(0, 10))
-            },
-            ResourceType.BerryBush => variant switch
-            {
-                0 => ("vegetation", new Rectangle(0, 0, 48, 48), new Vector2(36, 36), new Vector2(0, 12)),
-                1 => ("vegetation", new Rectangle(48, 0, 48, 48), new Vector2(36, 36), new Vector2(0, 12)),
-                2 => ("vegetation", new Rectangle(96, 0, 48, 48), new Vector2(36, 36), new Vector2(0, 12)),
-                _ => ("vegetation", new Rectangle(144, 0, 48, 48), new Vector2(36, 36), new Vector2(0, 12))
-            },
-            ResourceType.WildCrop => ("vegetation", new Rectangle(0, 128 + variant * 16, 48, 16), new Vector2(34, 18), new Vector2(0, 12)),
-            ResourceType.IronOre => ("resources", new Rectangle(52, 16, 28, 22), new Vector2(28, 22), new Vector2(0, 10)),
-            ResourceType.CrystalDeposit => ("rocks", new Rectangle(144, 240, 64, 64), new Vector2(42, 42), new Vector2(0, 12)),
-            ResourceType.GoldVein => ("resources", new Rectangle(96, 16, 24, 22), new Vector2(28, 24), new Vector2(0, 10)),
-            _ => (node.SpriteId, node.Source, new Vector2(34, 34), new Vector2(0, 12))
+            ResourceType.Tree => (AssetStore.ObjectCell(variant % 6), new Vector2(64, 64), new Vector2(0, 18)),
+            ResourceType.BerryBush => (AssetStore.ObjectCell(6 + (variant & 1)), new Vector2(42, 42), new Vector2(0, 13)),
+            ResourceType.WildCrop => (AssetStore.ObjectCell(10), new Vector2(34, 24), new Vector2(0, 13)),
+            ResourceType.Rock => (AssetStore.ObjectCell(12 + (variant % 3)), new Vector2(42, 42), new Vector2(0, 13)),
+            ResourceType.IronOre => (AssetStore.ObjectCell(16), new Vector2(34, 34), new Vector2(0, 13)),
+            ResourceType.GoldVein => (AssetStore.ObjectCell(17), new Vector2(34, 34), new Vector2(0, 13)),
+            ResourceType.CrystalDeposit => (AssetStore.ObjectCell(15), new Vector2(44, 44), new Vector2(0, 13)),
+            _ => (AssetStore.ObjectCell(12), new Vector2(34, 34), new Vector2(0, 13))
         };
     }
 
     private void DrawStructure(SpriteBatch batch, Structure structure, GameTime gameTime)
     {
-        var def = GameBalance.Structures[structure.Type];
         var pos = structure.Tile.CenterWorld + new Vector2(0, GameConfig.TileSize / 2f);
         switch (structure.Type)
         {
             case StructureType.WoodWall:
+                DrawAtlasObject(batch, 32, pos, new Vector2(46, 34));
+                break;
             case StructureType.StoneWall:
+                DrawAtlasObject(batch, 33, pos, new Vector2(46, 34));
+                break;
             case StructureType.IronWall:
+                DrawAtlasObject(batch, 34, pos, new Vector2(46, 34));
+                break;
             case StructureType.CrystalWall:
+                DrawAtlasObject(batch, 35, pos, new Vector2(46, 34));
+                break;
             case StructureType.Gate:
-                var source = structure.Type switch
-                {
-                    StructureType.WoodWall => new Rectangle(0, 192, 64, 32),
-                    StructureType.StoneWall => new Rectangle(96, 192, 64, 32),
-                    StructureType.IronWall => new Rectangle(192, 192, 64, 32),
-                    StructureType.CrystalWall => new Rectangle(288, 544, 64, 32),
-                    _ => new Rectangle(0, 0, 72, 72)
-                };
-                DrawSpriteWorld(batch, _game.Assets.Texture("building_walls"), pos, source, new Vector2(42, 26), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 36, pos, new Vector2(50, 50));
                 break;
             case StructureType.Campfire:
-                var frame = ((int)(gameTime.TotalGameTime.TotalSeconds / 0.12) % 4) * 32;
-                DrawSpriteWorld(batch, _game.Assets.Texture("fire"), pos, new Rectangle(frame, 0, 32, 48), new Vector2(32, 48), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 20, pos, new Vector2(40, 52));
                 break;
             case StructureType.Workbench:
-                DrawSpriteWorld(batch, _game.Assets.Texture("workbench"), pos, new Rectangle(0, 80, 64, 48), new Vector2(44, 34), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 21, pos, new Vector2(58, 48));
                 break;
             case StructureType.Sawmill:
-                DrawSpriteWorld(batch, _game.Assets.Texture("sawmill"), pos, new Rectangle(48, 0, 96, 64), new Vector2(64, 42), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 22, pos, new Vector2(64, 52));
                 break;
             case StructureType.Furnace:
-                DrawSpriteWorld(batch, _game.Assets.Texture("furnace"), pos, new Rectangle(64, 64, 64, 64), new Vector2(40, 44), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 23, pos, new Vector2(54, 54));
                 break;
             case StructureType.Anvil:
-                DrawSpriteWorld(batch, _game.Assets.Texture("anvil"), pos, new Rectangle(64, 32, 96, 64), new Vector2(58, 38), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 24, pos, new Vector2(56, 44));
                 break;
             case StructureType.AlchemyTable:
-                DrawSpriteWorld(batch, _game.Assets.Texture("alchemy"), pos, new Rectangle(0, 0, 80, 80), new Vector2(48, 48), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 25, pos, new Vector2(52, 52));
                 break;
             case StructureType.Watchtower:
-                DrawSpriteWorld(batch, _game.Assets.Texture("building_props"), pos, new Rectangle(0, 160, 64, 96), new Vector2(42, 64), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 26, pos, new Vector2(46, 62));
                 break;
             case StructureType.Barracks:
-                DrawSpriteWorld(batch, _game.Assets.Texture("building_walls"), pos, new Rectangle(96, 0, 96, 96), new Vector2(70, 70), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 27, pos, new Vector2(64, 64));
                 break;
             case StructureType.SpikeTrap:
-                DrawSpriteWorld(batch, _game.Assets.Texture("tools"), pos, new Rectangle(32, 0, 32, 32), new Vector2(24, 24), new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+                DrawAtlasObject(batch, 28, pos, new Vector2(30, 30));
                 break;
             case StructureType.FarmPlot:
                 DrawFarmPlot(batch, structure);
@@ -237,19 +188,20 @@ public sealed class PlayScreen : IGameScreen
         }
     }
 
+    private void DrawAtlasObject(SpriteBatch batch, int cell, Vector2 worldBottomCenter, Vector2 size)
+    {
+        DrawSpriteWorld(batch, _game.Assets.Texture("objects_atlas"), worldBottomCenter, AssetStore.ObjectCell(cell), size, new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+    }
+
     private void DrawFarmPlot(SpriteBatch batch, Structure structure)
     {
-        var tile = structure.Tile;
-        var baseRect = new Rectangle(tile.X * GameConfig.TileSize + 3, tile.Y * GameConfig.TileSize + 11, 26, 17);
-        DrawTextureWorld(batch, _game.Pixel, baseRect, null, new Color(91, 61, 34));
-        DrawTextureWorld(batch, _game.Pixel, new Rectangle(baseRect.X + 2, baseRect.Y + 3, 22, 2), null, new Color(121, 83, 46));
-        DrawTextureWorld(batch, _game.Pixel, new Rectangle(baseRect.X + 2, baseRect.Y + 9, 22, 2), null, new Color(121, 83, 46));
+        var pos = structure.Tile.CenterWorld + new Vector2(0, GameConfig.TileSize / 2f);
+        DrawAtlasObject(batch, 29, pos, new Vector2(42, 42));
         if (structure.Growth > 1)
         {
-            var source = structure.Growth >= 4 ? new Rectangle(80, 0, 32, 32) : new Rectangle(0, 128, 48, 16);
-            var texture = structure.Growth >= 4 ? "farm" : "vegetation";
-            var size = structure.Growth >= 4 ? new Vector2(24, 24) : new Vector2(28, 14);
-            DrawSpriteWorld(batch, _game.Assets.Texture(texture), structure.Tile.CenterWorld + new Vector2(0, 11), source, size, new Vector2(0.5f, 1f), Color.White, SpriteEffects.None);
+            var cell = structure.Growth >= 4 ? 11 : 10;
+            var size = structure.Growth >= 4 ? new Vector2(30, 30) : new Vector2(30, 22);
+            DrawAtlasObject(batch, cell, structure.Tile.CenterWorld + new Vector2(0, 13), size);
         }
     }
 
