@@ -51,6 +51,15 @@ jobs:
           OUT="artifacts/android"
           PROJECT="src/TheDawn/TheDawn.csproj"
           BUILD_ROOT="src/TheDawn/bin/Release/net8.0-android"
+          KEYSTORE="$GITHUB_WORKSPACE/android-signing/the-dawn-default.keystore"
+          SIGNING_ARGS=(
+            -p:ApplicationId=com.the.dawn
+            -p:AndroidKeyStore=true
+            -p:AndroidSigningKeyStore="$KEYSTORE"
+            -p:AndroidSigningKeyAlias=thedawn
+            -p:AndroidSigningStorePass=dawn-default-changeit
+            -p:AndroidSigningKeyPass=dawn-default-changeit
+          )
           mkdir -p "$OUT"
 
           dotnet publish "$PROJECT" \
@@ -59,13 +68,8 @@ jobs:
             --no-restore \
             -p:TargetFramework=net8.0-android \
             -p:TargetFrameworks=net8.0-android \
-            -p:ApplicationId=com.the.dawn \
-            -p:AndroidKeyStore=true \
-            -p:AndroidSigningKeyStore="$GITHUB_WORKSPACE/android-signing/the-dawn-default.keystore" \
-            -p:AndroidSigningKeyAlias=thedawn \
-            -p:AndroidSigningStorePass=dawn-default-changeit \
-            -p:AndroidSigningKeyPass=dawn-default-changeit \
-            "-p:AndroidPackageFormats=apk;aab"
+            "${SIGNING_ARGS[@]}" \
+            -p:AndroidPackageFormat=apk
 
           APK="$(find "$BUILD_ROOT" -type f \( -name '*Signed.apk' -o -name '*-Signed.apk' -o -name '*signed.apk' -o -name '*.apk' \) | sort | tail -n 1)"
           if [ -z "$APK" ]; then
@@ -74,6 +78,15 @@ jobs:
             exit 1
           fi
           cp "$APK" "$OUT/TheDawn-$HASH-signed.apk"
+
+          dotnet publish "$PROJECT" \
+            -f net8.0-android \
+            -c Release \
+            --no-restore \
+            -p:TargetFramework=net8.0-android \
+            -p:TargetFrameworks=net8.0-android \
+            "${SIGNING_ARGS[@]}" \
+            -p:AndroidPackageFormat=aab
 
           AAB="$(find "$BUILD_ROOT" -type f -name '*.aab' | sort | tail -n 1)"
           if [ -z "$AAB" ]; then

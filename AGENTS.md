@@ -98,4 +98,12 @@ The project file now declares default target frameworks only when `$(TargetFrame
 - Added conditional desktop `RuntimeIdentifiers` entry for `win-x64` in `TheDawn.csproj`.
 - Replaced Node 20-era action versions with current Node 24-compatible action versions: `actions/checkout@v6`, `actions/setup-dotnet@v5`, `actions/setup-java@v5`, and `actions/upload-artifact@v7`.
 - Pinned CI runners to `windows-2022` and `ubuntu-22.04` for stable .NET 8/Android workload behavior.
-- Fixed Android package format passing by quoting the semicolon-delimited `AndroidPackageFormats=apk;aab` argument. Do not remove the quotes.
+- Android package output is built with two separate publishes: `-p:AndroidPackageFormat=apk` and `-p:AndroidPackageFormat=aab`. Do not use a semicolon-delimited `apk;aab` command-line property; CI parsed `aab` as a separate MSBuild switch.
+## 2026-05-06 CI Repair Pass 4 - Windows ReadyToRun and Android Semicolon
+
+Latest CI logs showed:
+
+1. Windows publish restored and compiled `net8.0/win-x64`, but failed with `NETSDK1094` while optimizing assemblies for ReadyToRun. The workflow now sets `-p:PublishReadyToRun=false` while keeping self-contained single-file output and Authenticode signing.
+2. Android still failed with `MSB1006: Switch: aab`, meaning semicolon package formats were still being split before or inside MSBuild. The workflow now publishes APK and AAB in two independent `dotnet publish` calls using singular `AndroidPackageFormat` values.
+
+Keep these CI choices unless a future agent can run the workflows end-to-end and prove a different configuration works.

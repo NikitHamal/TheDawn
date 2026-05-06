@@ -45,7 +45,7 @@ Install .NET 8 SDK and the appropriate MonoGame/Android workloads.
 
 ```bash
 dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
-dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self-contained true --no-restore -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0 -p:PublishSingleFile=true -o artifacts/windows/TheDawn-win-x64
+dotnet publish src/TheDawn/TheDawn.csproj -f net8.0 -c Release -r win-x64 --self-contained true --no-restore -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0 -p:PublishSingleFile=true -p:PublishReadyToRun=false -o artifacts/windows/TheDawn-win-x64
 ```
 
 ### Android
@@ -110,6 +110,6 @@ src/TheDawn
 
 ## CI repair notes
 
-The Windows workflow restores the desktop target with `-r win-x64` before publishing with `--no-restore`; this is required so `project.assets.json` contains the `net8.0/win-x64` target used by the self-contained Windows publish.
+The Windows workflow restores the desktop target with `-r win-x64` before publishing with `--no-restore`; this is required so `project.assets.json` contains the `net8.0/win-x64` target used by the self-contained Windows publish. Windows CI now publishes with `-p:PublishReadyToRun=false` because the hosted runner restore did not provide a valid ReadyToRun runtime package for this MonoGame DesktopGL publish, causing `NETSDK1094`.
 
-The Android workflow passes `AndroidPackageFormats` as one quoted MSBuild argument (`"-p:AndroidPackageFormats=apk;aab"`) so Bash does not split the semicolon and MSBuild does not see `aab` as a stray switch.
+The Android workflow intentionally publishes twice, once with `-p:AndroidPackageFormat=apk` and once with `-p:AndroidPackageFormat=aab`. Do not combine these into `apk;aab` on the command line; GitHub Actions/MSBuild treated `aab` as a stray switch in CI.

@@ -50,7 +50,7 @@ jobs:
             -p:TargetFrameworks=net8.0 `
             -p:RuntimeIdentifier=win-x64 `
             -p:PublishSingleFile=true `
-            -p:PublishReadyToRun=true `
+            -p:PublishReadyToRun=false `
             -p:DebugType=None `
             -p:DebugSymbols=false `
             -o $out
