@@ -107,3 +107,9 @@ src/TheDawn
   Systems/      Session, time loop, raids, crafting
   World/        Chunked infinite generation and Dijkstra pathing
 ```
+
+## CI repair notes
+
+The Windows workflow restores the desktop target with `-r win-x64` before publishing with `--no-restore`; this is required so `project.assets.json` contains the `net8.0/win-x64` target used by the self-contained Windows publish.
+
+The Android workflow passes `AndroidPackageFormats` as one quoted MSBuild argument (`"-p:AndroidPackageFormats=apk;aab"`) so Bash does not split the semicolon and MSBuild does not see `aab` as a stray switch.

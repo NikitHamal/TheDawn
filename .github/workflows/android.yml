@@ -8,22 +8,26 @@ on:
 permissions:
   contents: read
 
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+
 jobs:
   build-android:
     name: Build signed Android package
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
 
@@ -34,7 +38,10 @@ jobs:
         run: keytool -list -keystore android-signing/the-dawn-default.keystore -storepass dawn-default-changeit -alias thedawn
 
       - name: Restore Android target only
-        run: dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0-android -p:TargetFrameworks=net8.0-android
+        run: |
+          dotnet restore src/TheDawn/TheDawn.csproj \
+            -p:TargetFramework=net8.0-android \
+            -p:TargetFrameworks=net8.0-android
 
       - name: Publish signed APK and AAB
         shell: bash
@@ -43,38 +50,35 @@ jobs:
           HASH="${GITHUB_SHA::12}"
           OUT="artifacts/android"
           PROJECT="src/TheDawn/TheDawn.csproj"
-          BUILD_DIR="src/TheDawn/bin/Release/net8.0-android"
+          BUILD_ROOT="src/TheDawn/bin/Release/net8.0-android"
           mkdir -p "$OUT"
 
-          COMMON_ARGS=(
-            "$PROJECT"
-            -f net8.0-android
-            -c Release
-            --no-restore
-            -p:TargetFramework=net8.0-android
-            -p:TargetFrameworks=net8.0-android
-            -p:ApplicationId=com.the.dawn
-            -p:AndroidKeyStore=true
-            -p:AndroidSigningKeyStore="$GITHUB_WORKSPACE/android-signing/the-dawn-default.keystore"
-            -p:AndroidSigningKeyAlias=thedawn
-            -p:AndroidSigningStorePass=dawn-default-changeit
-            -p:AndroidSigningKeyPass=dawn-default-changeit
-          )
+          dotnet publish "$PROJECT" \
+            -f net8.0-android \
+            -c Release \
+            --no-restore \
+            -p:TargetFramework=net8.0-android \
+            -p:TargetFrameworks=net8.0-android \
+            -p:ApplicationId=com.the.dawn \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore="$GITHUB_WORKSPACE/android-signing/the-dawn-default.keystore" \
+            -p:AndroidSigningKeyAlias=thedawn \
+            -p:AndroidSigningStorePass=dawn-default-changeit \
+            -p:AndroidSigningKeyPass=dawn-default-changeit \
+            "-p:AndroidPackageFormats=apk;aab"
 
-          dotnet publish "${COMMON_ARGS[@]}" -p:AndroidPackageFormat=apk
-          APK=$(find "$BUILD_DIR" -type f \( -name '*Signed.apk' -o -name '*-Signed.apk' -o -name '*signed.apk' -o -name '*.apk' \) | sort | tail -n 1)
+          APK="$(find "$BUILD_ROOT" -type f \( -name '*Signed.apk' -o -name '*-Signed.apk' -o -name '*signed.apk' -o -name '*.apk' \) | sort | tail -n 1)"
           if [ -z "$APK" ]; then
-            echo "No signed APK was produced under $BUILD_DIR" >&2
-            find "$BUILD_DIR" -maxdepth 5 -type f -print >&2 || true
+            echo "No signed APK was produced under $BUILD_ROOT" >&2
+            find "$BUILD_ROOT" -maxdepth 6 -type f -print >&2 || true
             exit 1
           fi
           cp "$APK" "$OUT/TheDawn-$HASH-signed.apk"
 
-          dotnet publish "${COMMON_ARGS[@]}" -p:AndroidPackageFormat=aab
-          AAB=$(find "$BUILD_DIR" -type f -name '*.aab' | sort | tail -n 1)
+          AAB="$(find "$BUILD_ROOT" -type f -name '*.aab' | sort | tail -n 1)"
           if [ -z "$AAB" ]; then
-            echo "No signed AAB was produced under $BUILD_DIR" >&2
-            find "$BUILD_DIR" -maxdepth 5 -type f -print >&2 || true
+            echo "No signed AAB was produced under $BUILD_ROOT" >&2
+            find "$BUILD_ROOT" -maxdepth 6 -type f -print >&2 || true
             exit 1
           fi
           cp "$AAB" "$OUT/TheDawn-$HASH-signed.aab"
@@ -82,7 +86,7 @@ jobs:
           ls -lah "$OUT"
 
       - name: Upload Android app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: TheDawn-${{ github.sha }}-android
           path: artifacts/android/*

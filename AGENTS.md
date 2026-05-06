@@ -91,3 +91,11 @@ CI logs showed two workflow issues:
 2. The Android workflow passed `AndroidPackageFormats=apk;aab` as a semicolon-delimited command-line property. MSBuild parsed `aab` as a separate switch in CI. The fix is to build APK and AAB in two explicit `dotnet publish` commands using singular `-p:AndroidPackageFormat=apk` and `-p:AndroidPackageFormat=aab`.
 
 The project file now declares default target frameworks only when `$(TargetFrameworks)` is empty, which lets CI intentionally constrain each workflow to one platform target.
+
+## Recent CI repair - runtime restore and Node 24 actions
+
+- Fixed Windows publish by restoring `net8.0` with `-r win-x64` before `--no-restore` publish. This resolves missing `net8.0/win-x64` assets in `project.assets.json`.
+- Added conditional desktop `RuntimeIdentifiers` entry for `win-x64` in `TheDawn.csproj`.
+- Replaced Node 20-era action versions with current Node 24-compatible action versions: `actions/checkout@v6`, `actions/setup-dotnet@v5`, `actions/setup-java@v5`, and `actions/upload-artifact@v7`.
+- Pinned CI runners to `windows-2022` and `ubuntu-22.04` for stable .NET 8/Android workload behavior.
+- Fixed Android package format passing by quoting the semicolon-delimited `AndroidPackageFormats=apk;aab` argument. Do not remove the quotes.

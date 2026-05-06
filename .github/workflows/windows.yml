@@ -8,21 +8,31 @@ on:
 permissions:
   contents: read
 
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+
 jobs:
   build-windows:
     name: Build signed-style Windows package
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore Desktop target only
-        run: dotnet restore src/TheDawn/TheDawn.csproj -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+      - name: Restore Desktop win-x64 target only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          dotnet restore src/TheDawn/TheDawn.csproj `
+            -p:TargetFramework=net8.0 `
+            -p:TargetFrameworks=net8.0 `
+            -r win-x64
 
       - name: Publish Windows x64
         shell: pwsh
@@ -38,19 +48,20 @@ jobs:
             --no-restore `
             -p:TargetFramework=net8.0 `
             -p:TargetFrameworks=net8.0 `
+            -p:RuntimeIdentifier=win-x64 `
             -p:PublishSingleFile=true `
             -p:PublishReadyToRun=true `
             -p:DebugType=None `
             -p:DebugSymbols=false `
             -o $out
-          $exeFiles = Get-ChildItem -Path $out -Filter *.exe -File
+          $exeFiles = Get-ChildItem -Path $out -Filter *.exe -File -ErrorAction Stop
           if ($exeFiles.Count -eq 0) { throw "No Windows executable was produced in $out" }
           $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=The Dawn Private CI" -CertStoreLocation "Cert:\CurrentUser\My"
           $exeFiles | ForEach-Object { Set-AuthenticodeSignature -FilePath $_.FullName -Certificate $cert | Out-Host }
           Compress-Archive -Path "$out/*" -DestinationPath "artifacts/windows/TheDawn-$hash-win-x64.zip" -Force
 
       - name: Upload Windows app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: TheDawn-${{ github.sha }}-windows
           path: artifacts/windows/*.zip
